@@ -5,7 +5,7 @@ I spent two chunks of two hours for this implementation. I think the most diffic
 RUN INSTRUCTION AND VERIFICATION:
 
 1. Clone the project: git clone https://github.com/liwei2001/loans.git
-2. To verify the output for the large data set, go to 'target' folder, assignments.csv and yields.csv are generated.
+2. To verify the output for the large data set, go to 'target' folder, assignments.csv and yields.csv are generated (or navigate here: https://github.com/liwei2001/loans/tree/master/target).
 3. If you have Docker installed, run the script: ./build.sh , it will build and run, the two output files will get generated in the same location in target folder.
 4. If you don't have Docker installed, import the project into IDE such as Intellij, open and run LoanApplication.java . 
 
@@ -58,8 +58,7 @@ POST /loanRequest
 }
 Response:
 {
-	"status": "Granted" (or "Denied"),
-	"facilityId": {facilityId} (or -1 for denied case)
+	"facilityId": {facilityId} (or -1 for not granted case)
 }
 
 GET /facilities/
