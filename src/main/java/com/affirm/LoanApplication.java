@@ -1,8 +1,6 @@
 package com.affirm;
 
 import com.affirm.data.*;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.log4j.Logger;
 
 import java.io.*;
 import java.net.URL;
@@ -12,8 +10,6 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class LoanApplication {
-
-    private static final Logger log = Logger.getLogger(LoanApplication.class);
 
     private final static String COMMA_DELIMITER = ",";
     private static final String NEW_LINE_SEPARATOR = "\n";
@@ -57,7 +53,7 @@ public class LoanApplication {
             inputList = br.lines().skip(1).map(mapFunction).collect(Collectors.toList());
             br.close();
         } catch (Exception e) {
-            log.debug("reading input file exception from: " + inputFile);
+            System.out.println("reading input file exception from: " + inputFile);
             e.printStackTrace();
         }
 
@@ -79,8 +75,8 @@ public class LoanApplication {
         String[] input = line.split(COMMA_DELIMITER);
         //if facilityId field value is empty in csv file, assign -1 as facilityId value for this covenant object
         //if max allowed default likelihood is empty, then assign maxDefaultRate value as 1 (100%)
-        return new Covenant(Integer.parseInt(input[2]), StringUtils.isEmpty(input[0])? -1 : Integer.parseInt(input[0]),
-                            StringUtils.isEmpty(input[1])? 1 : Float.parseFloat(input[1]), input[3]);
+        return new Covenant(Integer.parseInt(input[2]), input[0].isEmpty()? -1 : Integer.parseInt(input[0]),
+                            input[1].isEmpty()? 1 : Float.parseFloat(input[1]), input[3]);
     };
 
     private Function<String, Loan> mapToLoanItem = (line) -> {
@@ -130,9 +126,9 @@ public class LoanApplication {
         List<Covenant> convenantsMet = covenants.stream().filter(c ->
                 ((c.getFacilityId() == -1 ?  //covenant facility id is empty, applies to all facilities for that bank
                         //facilityId is empty: bankId not matching, covenant check passed; otherwise, check banned state and default rate comparison
-                        (c.getBankId() != facility.getBankId() ? true : ((StringUtils.isEmpty(c.getBannedState()) || !c.getBannedState().equals(state)) && c.getMaxDefaultRate() >= defaultRate)) :
+                        (c.getBankId() != facility.getBankId() ? true : ((c.getBannedState().isEmpty() || !c.getBannedState().equals(state)) && c.getMaxDefaultRate() >= defaultRate)) :
                         //facilityId is not empty: facilityId not matching, covenant check passed; otherwise, check bank id, banned state and default rate comparison
-                        (c.getFacilityId() != facility.getId() ? true : (c.getBankId() == facility.getBankId() && (StringUtils.isEmpty(c.getBannedState()) || !c.getBannedState().equals(state)) && c.getMaxDefaultRate() >= defaultRate)))
+                        (c.getFacilityId() != facility.getId() ? true : (c.getBankId() == facility.getBankId() && (c.getBannedState().isEmpty() || !c.getBannedState().equals(state)) && c.getMaxDefaultRate() >= defaultRate)))
                         )).collect(Collectors.toList());
 
         return convenantsMet.size() == covenants.size();
@@ -143,8 +139,7 @@ public class LoanApplication {
         FileWriter fileWriter = null;
 
         try {
-            URL res = getClass().getResource("/loans.csv");
-            File file = Paths.get(res.toURI()).toFile();
+            File file = Paths.get("target", "loans.csv").toFile();
             String absolutePath = file.getAbsolutePath();
 
             fileWriter = new FileWriter(absolutePath.replace("loans.csv", "assignments.csv"));
