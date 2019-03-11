@@ -77,6 +77,7 @@ public class LoanApplication {
 
     private Function<String, Covenant> mapToCovenantItem = (line) -> {
         String[] input = line.split(COMMA_DELIMITER);
+        //if facilityId field value is empty in csv file, assign -1 as facilityId value for this covenant object
         //if max allowed default likelihood is empty, then assign maxDefaultRate value as 1 (100%)
         return new Covenant(Integer.parseInt(input[2]), StringUtils.isEmpty(input[0])? -1 : Integer.parseInt(input[0]),
                             StringUtils.isEmpty(input[1])? 1 : Float.parseFloat(input[1]), input[3]);
@@ -96,10 +97,13 @@ public class LoanApplication {
     }
 
     private Function<Loan, Assignment> mapToAssignmentItem = (loan) -> {
+        //find the first facility whose remaining loan size is no less than the loan amount
+        //and meet all the covenant requirements
         Optional<Facility> assignedFacility = facilities.stream().filter(f ->
-                (f.getRemainingLoanSize() > loan.getAmount() && meetAllCovenants(f, loan.getDefaultRate(), loan.getState()))).findFirst();
+                (f.getRemainingLoanSize() >= loan.getAmount() && meetAllCovenants(f, loan.getDefaultRate(), loan.getState()))).findFirst();
 
         if (assignedFacility.isPresent()) {
+            //after a facility is located for granting the loan, update the remaining loan size for that facility and the current yields
             updateFacilityRemainingLoanAmount(assignedFacility.get(), loan.getAmount());
             updateFacilityCurrentYield(assignedFacility.get(), loan);
         }
@@ -125,7 +129,9 @@ public class LoanApplication {
     private boolean meetAllCovenants(Facility facility, float defaultRate, String state) {
         List<Covenant> convenantsMet = covenants.stream().filter(c ->
                 ((c.getFacilityId() == -1 ?  //covenant facility id is empty, applies to all facilities for that bank
+                        //facilityId is empty: bankId not matching, covenant check passed; otherwise, check banned state and default rate comparison
                         (c.getBankId() != facility.getBankId() ? true : ((StringUtils.isEmpty(c.getBannedState()) || !c.getBannedState().equals(state)) && c.getMaxDefaultRate() >= defaultRate)) :
+                        //facilityId is not empty: facilityId not matching, covenant check passed; otherwise, check bank id, banned state and default rate comparison
                         (c.getFacilityId() != facility.getId() ? true : (c.getBankId() == facility.getBankId() && (StringUtils.isEmpty(c.getBannedState()) || !c.getBannedState().equals(state)) && c.getMaxDefaultRate() >= defaultRate)))
                         )).collect(Collectors.toList());
 
